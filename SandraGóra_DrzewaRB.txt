@@ -1,0 +1,322 @@
+﻿#include <iostream>
+#include <cstdlib>
+#include <ctime>
+
+using namespace std;
+
+struct RBNode
+{
+	RBNode* rodzice;
+	RBNode* lewy;
+	RBNode* prawy;
+	double wynik;
+	string imie;
+	char kolor;
+};
+
+RBNode* Minimum(RBNode* sentry, RBNode* root)
+{
+	if (root != sentry)
+		while (root->lewy != sentry) root = root->lewy;
+	return root;
+}
+
+RBNode* Następny(RBNode* currentNode, RBNode* sentry, RBNode* root)
+{
+	RBNode* temp;
+
+	if (currentNode != sentry)
+	{
+		if (currentNode->prawy != sentry) return Minimum(sentry, currentNode->prawy);
+		else
+		{
+			temp = currentNode->rodzice;
+			while ((temp != sentry) && (currentNode == temp->prawy))
+			{
+				currentNode = temp;
+				temp = temp->rodzice;
+			}
+			return temp;
+		}
+	}
+	return sentry;
+}
+void LewaRotacja(RBNode* A, RBNode* sentry, RBNode*& root)
+{
+	RBNode* B;
+	RBNode* temp;
+
+	B = A->lewy;
+
+	if (B != sentry)
+	{
+		temp = A->rodzice;
+		A->prawy = B->lewy;
+
+		if (A->prawy != sentry) A->prawy->rodzice = A;
+
+		B->lewy = A;
+		B->rodzice = temp;
+		A->rodzice = B;
+
+		if (temp != sentry)
+		{
+			if (temp->lewy == A) temp->lewy = B;
+			else temp->prawy = B;
+		}
+		else root = B;
+	}
+}
+
+void PrawaRotacja(RBNode* A, RBNode* sentry, RBNode*& root)
+{
+	RBNode* B;
+	RBNode* temp;
+
+	B = A->lewy;
+
+	if (B != sentry)
+	{
+		temp = A->rodzice;
+		A->lewy = B->prawy;
+
+		if (A->lewy != sentry) A->lewy->rodzice = A;
+
+		B->prawy = A;
+		B->rodzice = temp;
+		A->rodzice = B;
+
+		if (temp != sentry)
+		{
+			if (temp->lewy == A) temp->lewy = B;
+			else temp->prawy = B;
+		}
+		else root = B;
+	}
+}
+
+void Wstawianie(RBNode*& root, RBNode * sentry, double value, string imie)
+{
+	RBNode* A = new RBNode;
+	A->lewy = sentry;
+	A->prawy = sentry;
+	A->kolor = 'R';
+	A->rodzice = root;
+	A->wynik = value;
+	A->imie = imie;
+	RBNode* temp;
+
+	if (A->rodzice == sentry)
+	{
+		root = A;
+		root->kolor = 'B';
+	}
+	else
+	{
+		while (true)
+		{
+			if (value < A->rodzice->wynik)
+			{
+				if (A->rodzice->lewy == sentry)
+				{
+					A->rodzice->lewy = A;
+					break;
+				}
+				A->rodzice = A->rodzice->lewy;
+			}
+			else
+			{
+				if (A->rodzice->prawy == sentry)
+				{
+					A->rodzice->prawy = A;
+					break;
+				}
+				A->rodzice = A->rodzice->prawy;
+			}
+		}
+	}
+
+	while (A != root && A->rodzice->kolor == 'R')
+	{
+		if (A->rodzice == A->rodzice->rodzice->lewy)
+		{
+			temp = A->rodzice->rodzice->prawy;
+			if (temp->kolor == 'R')
+			{
+				A->rodzice->kolor = 'B';
+				temp->kolor = 'B';
+				A->rodzice->rodzice->kolor = 'R';
+				A = A->rodzice->rodzice;
+				continue;
+			}
+			if (A == A->rodzice->prawy)
+			{
+				A = A->rodzice;
+				LewaRotacja(A, sentry, root);
+			}
+			A->rodzice->kolor = 'B';
+			A->rodzice->rodzice->kolor = 'R';
+			PrawaRotacja(A->rodzice->rodzice, sentry, root);
+			break;
+		}
+		else
+		{
+			temp = A->rodzice->rodzice->lewy;
+			if (temp->kolor == 'R')
+			{
+				A->rodzice->kolor = 'B';
+				temp->kolor = 'B';
+				A->rodzice->rodzice->kolor = 'R';
+				A = A->rodzice->rodzice;
+				continue;
+			}
+			if (A == A->rodzice->lewy)
+			{
+				A = A->rodzice;
+				PrawaRotacja(A, sentry, root);
+			}
+			A->rodzice->kolor = 'B';
+			A->rodzice->rodzice->kolor = 'R';
+			LewaRotacja(A->rodzice->rodzice, sentry, root);
+			break;
+		}
+	}
+	root->kolor = 'B';
+}
+
+void Usuniecie(RBNode*& root, RBNode* sentry, RBNode* X)
+{
+	RBNode* A, * B, * C;
+	if ( (X->lewy == sentry) || (X->prawy == sentry) ) A = X;
+	else A = Następny(X, sentry, root);
+	
+	if (A->lewy != sentry) B = A->lewy;
+	else B = A->prawy;
+
+	B->rodzice = A->rodzice;
+	if (A->rodzice == sentry)
+	{
+		root = B;
+	}
+	else if (A == A->rodzice->lewy)
+	{
+		A->rodzice->lewy = B;
+	}
+	else A->rodzice->prawy = B;
+
+	if (A != X) X->wynik = A->wynik;
+	if (A->kolor == 'B')
+	{
+		while (B != root && B->kolor == 'B')
+		{
+			if (B == B->rodzice->lewy)
+			{
+				C = B->rodzice->prawy;
+				if (C->kolor == 'R')
+				{
+					C->kolor = 'B';
+					B->rodzice->kolor = 'R';
+					LewaRotacja(B->rodzice, sentry, root);
+					C = B->rodzice->prawy;
+				}
+				if (C->lewy->kolor == 'B' && C->prawy->kolor == 'B')
+				{
+					C->kolor = 'R';
+					B = B->rodzice;
+					continue;
+				}
+				if (C->prawy->kolor == 'B')
+				{
+					C->lewy->kolor = 'B';
+					C->kolor = 'R';
+					PrawaRotacja(C, sentry, root);
+					C = B->rodzice->prawy;
+				}
+				C->kolor = B->rodzice->kolor;
+				B->rodzice->kolor = 'B';
+				C->prawy->kolor = 'B';
+				LewaRotacja(B->rodzice, sentry, root);
+				B = root;
+			}
+			else
+			{
+				C = B->rodzice->lewy;
+				if ( C->kolor == 'R' ) 
+				{
+					C->kolor = 'B';
+					B->rodzice->kolor = 'R';
+					PrawaRotacja(B->rodzice, sentry, root);
+					C = B->rodzice->lewy;
+				}
+				if (C->lewy->kolor == 'B' && C->prawy->kolor == 'B')
+				{
+					C->kolor = 'R';
+					B = B->rodzice;
+					continue;
+				}
+				if (C->lewy->kolor == 'B')
+				{
+					C->prawy->kolor = 'B';
+					C->kolor = 'R';
+					LewaRotacja(C, sentry, root);
+					C = B->rodzice->lewy;
+				}
+				C->kolor = B->rodzice->kolor;
+				B->rodzice->kolor = 'B';
+				C->lewy->kolor = 'B';
+				PrawaRotacja(B->rodzice, sentry, root);
+				B = root;
+			}
+		}
+	}
+	B->kolor = 'B';
+	delete A;
+}
+
+RBNode* Szukanie(RBNode* node, double value)
+{
+	while (node && node->wynik != value)
+		node = (value < node->wynik) ? node->lewy : node->prawy;
+	return node;
+}
+
+void printNodes(RBNode* node, RBNode* sentry)
+{
+	if (node != sentry)
+	{
+		printNodes(node->lewy, sentry);
+		cout << node->wynik << ". " << node->imie << endl;
+		printNodes(node->prawy, sentry);
+	}
+}
+
+double SzukanieImienia(RBNode* node, string imie)
+{
+	double val;
+	if (node)
+	{
+		SzukanieImienia(node->lewy, imie);
+		if (node->imie == imie) val = node->wynik;
+		SzukanieImienia(node->prawy, imie);
+	}
+	return val;
+}
+
+
+
+int main()
+{
+	RBNode* sentry = new RBNode;
+
+	sentry->kolor = 'B';
+	sentry->lewy = sentry;
+	sentry->prawy = sentry;
+	sentry->rodzice = sentry;
+
+	RBNode* root = sentry;
+
+	
+
+	delete sentry;
+	return 0;
+}
